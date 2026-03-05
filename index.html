@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FAZIL Carrom Pro Social</title>
+    <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+    <style>
+        body { background: #121212; color: white; font-family: 'Segoe UI', sans-serif; display: flex; flex-direction: column; align-items: center; margin: 0; overflow: hidden; }
+        h1 { margin: 10px; color: #ff5722; letter-spacing: 5px; text-shadow: 2px 2px #000; }
+        #game-container { position: relative; border: 12px solid #3e2723; border-radius: 8px; box-shadow: 0 0 40px rgba(0,0,0,0.9); }
+        canvas { background-color: #f5deb3; display: block; cursor: crosshair; }
+        .panel { background: #1e1e1e; padding: 15px; border-radius: 10px; margin-top: 10px; width: 500px; display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; border: 1px solid #333; }
+        button { background: #ff5722; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; font-weight: bold; }
+        #startMenu, #legalPopup { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 100; text-align: center; }
+    </style>
+</head>
+<body>
+<h1>FAZIL</h1>
+<div id="game-container">
+    <canvas id="board" width="500" height="500"></canvas>
+    <div id="legalPopup" style="display:none; z-index:400;">
+        <h2 style="color:#ff5722;">TERMS & PRIVACY</h2>
+        <button onclick="acceptTerms()" style="margin-top:20px; background:#4caf50;">I ACCEPT</button>
+    </div>
+    <div id="startMenu">
+        <h1 style="font-size:60px;">FAZIL</h1>
+        <div style="margin: 20px;">
+            <button onclick="setMode('1v1')">1 VS 1</button>
+            <button onclick="setMode('2v2')" style="background:#2196f3">2 VS 2</button>
+            <button onclick="setMode('CPU')" style="background:#4caf50">VS CPU</button>
+        </div>
+    </div>
+</div>
+<div class="panel">
+    <button onclick="resetGame()">Reset</button>
+    <div style="display:flex; align-items:center; gap:8px;">
+        <input type="text" id="roomId" placeholder="Room" style="width:60px;">
+        <button onclick="joinMultiplayer()" style="background:#9c27b0;">Voice</button>
+    </div>
+</div>
+<script>
+    const canvas = document.getElementById('board');
+    const ctx = canvas.getContext('2d');
+    let gameMode = '1v1', gameStarted = false;
+    let coins = [], striker = { x: 250, y: 410, r: 16, color: '#ff5722', vx: 0, vy: 0, dragging: false };
+    let mouse = { x: 0, y: 0 };
+
+    function initBoard() {
+        coins = [];
+        coins.push({ x: 250, y: 250, r: 12, color: '#ff00ff', vx: 0, vy: 0 });
+        for (let i = 0; i < 6; i++) {
+            let a = (i * 60) * (Math.PI / 180);
+            coins.push({ x: 250 + Math.cos(a) * 30, y: 250 + Math.sin(a) * 30, r: 12, color: '#00e5ff', vx: 0, vy: 0 });
+        }
+    }
+
+    function draw() {
+        if (!gameStarted) return;
+        ctx.fillStyle = "#f5deb3"; ctx.fillRect(0,0,500,500);
+        ctx.fillStyle = "#000"; [0,500].forEach(x=>[0,500].forEach(y=>{ ctx.beginPath(); ctx.arc(x,y,35,0,Math.PI*2); ctx.fill(); }));
+        [striker, ...coins].forEach(p => {
+            p.x += p.vx; p.y += p.vy; p.vx *= 0.98; p.vy *= 0.98;
+            ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI*2); ctx.fillStyle = p.color; ctx.fill(); ctx.stroke();
+        });
+        requestAnimationFrame(draw);
+    }
+
+    function setMode(m) { gameStarted = true; document.getElementById('startMenu').style.display='none'; initBoard(); draw(); }
+    function acceptTerms() { localStorage.setItem('fazil_terms','true'); document.getElementById('legalPopup').style.display='none'; }
+    function resetGame() { initBoard(); striker.vx=0; striker.vy=0; striker.x=250; striker.y=410; }
+
+    canvas.addEventListener('mousedown', e => {
+        let rect = canvas.getBoundingClientRect(); mouse.x = e.clientX-rect.left; mouse.y = e.clientY-rect.top;
+        if(Math.hypot(mouse.x-striker.x, mouse.y-striker.y)<striker.r) striker.dragging = true;
+    });
+    canvas.addEventListener('mouseup', () => {
+        if(striker.dragging) {
+            striker.vx = (striker.x - mouse.x)*0.15; striker.vy = (striker.y - mouse.y)*0.15;
+            striker.dragging = false;
+        }
+    });
+    canvas.addEventListener('mousemove', e => { let rect = canvas.getBoundingClientRect(); mouse.x = e.clientX-rect.left; mouse.y = e.clientY-rect.top; });
+    window.onload = () => { if(!localStorage.getItem('fazil_terms')) document.getElementById('legalPopup').style.display='flex'; };
+</script>
+</body>
+</html>
